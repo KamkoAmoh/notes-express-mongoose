@@ -1,0 +1,24 @@
+{
+  "name": "notes-express-mongoose",
+  "version": "1.0.0",
+  "description": "express-mongoose-postman-notes",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KamkoAmoh/notes-express-mongoose.git"
+  },
+  "author": "Greg",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KamkoAmoh/notes-express-mongoose/issues"
+  },
+  "homepage": "https://github.com/KamkoAmoh/notes-express-mongoose#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "mongoose": "^5.8.9",
+    "nodemon": "^2.0.2"
+  }
+}
