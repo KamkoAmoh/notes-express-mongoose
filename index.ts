@@ -1,7 +1,10 @@
 import * as express from 'express';
 import * as mongoose from 'mongoose';
 import * as bodyParser from 'body-parser';
+import * as fs from 'fs';
 import { ObjectId } from 'mongodb';
+import * as multer from 'multer';
+import * as path from 'path';
 
 const app = express();
 
@@ -9,10 +12,11 @@ mongoose.connect('mongodb://localhost/notes', { useNewUrlParser: true, useUnifie
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, "connection error"));
-db.on('open', () => console.log(`connected ${db.modelNames}`));
+db.on('open', () => console.log(`connected`));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }))
+//app.use('/file', express.static(__dirname + "\\files"))
 app.set('view engine', 'ejs');
 
 const noteSchema = new mongoose.Schema({
@@ -36,10 +40,20 @@ app.post('/', async (req, res) => {
 });
 
 app.get('/', async (req, res) => {
+    const pageNumber = req.query.page;
+    const itemsPerPage = req.query.ipp;
+    const notesPerPage = await NoteModel.find({})
+        .limit(Number(itemsPerPage))
+        .skip(Number(itemsPerPage) * Number(pageNumber))
+    if (!notesPerPage) return res.sendStatus(404);
+    res.send(notesPerPage);
+});
+
+app.get('/all', async (req, res) => {
     const notes = await NoteModel.find({}).lean();
     if (!notes) return res.sendStatus(404);
     res.send(notes);    
-});
+}); // Find all items in DBs.
 
 app.get('/:id', async (req, res) => {
     const note = await NoteModel.findById(new ObjectId(req.params.id));
@@ -65,5 +79,63 @@ app.put('/:id', async (req, res) => {
     if (!update) return res.sendStatus(404);
     res.send(update.toJSON());
 });
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.resolve(__dirname + "/files"));
+    }
+});
+
+let upload = multer({ storage: storage});
+
+const fileSchema = new mongoose.Schema({
+    filename: String,
+    contentType: String
+});
+
+const FileModel = mongoose.model('FileModel', fileSchema);
+
+app.post('/file', upload.single('file'), async (req, res) => {
+    const model = new FileModel({
+        filename: req.file.filename,
+        contentType: req.file.mimetype
+    })
+    await model.save();
+    res.sendStatus(200);
+});
+
+// app.get('/file/:id', async (req, res) => {
+//     const file = await FileModel.findById({_id: req.params.id});
+//     if (!file) return res.sendStatus(404);
+//     const contentType = file.toObject().contentType;
+//     const fileName = file.toObject().filename;
+
+//     res.contentType(contentType);
+//     res.sendFile(path.resolve(__dirname + "/files/" + fileName));
+// });
+
+app.get('/file/:name', async (req, res) => {
+    const file = await FileModel.findOne({ filename: req.params.name }).lean();
+    if (!file) return res.sendStatus(404);
+    res.contentType(file.contentType);
+    res.sendFile(path.resolve(__dirname + "/files/" + file.filename));
+    
+});
+
+// app.delete('/file/:id', async (req, res) => {
+//     const file = await FileModel.find({_id: new ObjectId(req.params.id)});
+//     if (!file) return res.sendStatus(404);
+//     fs.unlink(path.resolve(__dirname + '/files/' + file[0].toObject().filename), (err) => console.log(err));
+//     await FileModel.findByIdAndDelete({_id: new ObjectId(req.params.id)})
+//     res.sendStatus(200);
+// });
+
+app.delete('/file/:name', async (req, res) => {
+    const file = await FileModel.findOne({ filename: req.params.name }).lean();
+    if (!file) return res.sendStatus(404);
+    fs.unlink(path.resolve(__dirname + "/files/" + file.filename), (err) => console.log(err));
+    await FileModel.findByIdAndDelete({ _id: new ObjectId(file._id) });
+    res.sendStatus(200);
+})
 
 app.listen(3000);
