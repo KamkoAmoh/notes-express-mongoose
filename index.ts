@@ -16,7 +16,7 @@ db.on('open', () => console.log(`connected`));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }))
-//app.use('/file', express.static(__dirname + "\\files"))
+//app.use('/file', express.static(__dirname + "\\files")) // Error, issue with static dir.
 app.set('view engine', 'ejs');
 
 const noteSchema = new mongoose.Schema({
@@ -104,16 +104,6 @@ app.post('/file', upload.single('file'), async (req, res) => {
     res.sendStatus(200);
 });
 
-// app.get('/file/:id', async (req, res) => {
-//     const file = await FileModel.findById({_id: req.params.id});
-//     if (!file) return res.sendStatus(404);
-//     const contentType = file.toObject().contentType;
-//     const fileName = file.toObject().filename;
-
-//     res.contentType(contentType);
-//     res.sendFile(path.resolve(__dirname + "/files/" + fileName));
-// });
-
 app.get('/file/:name', async (req, res) => {
     const file = await FileModel.findOne({ filename: req.params.name }).lean();
     if (!file) return res.sendStatus(404);
@@ -121,14 +111,6 @@ app.get('/file/:name', async (req, res) => {
     res.sendFile(path.resolve(__dirname + "/files/" + file.filename));
     
 });
-
-// app.delete('/file/:id', async (req, res) => {
-//     const file = await FileModel.find({_id: new ObjectId(req.params.id)});
-//     if (!file) return res.sendStatus(404);
-//     fs.unlink(path.resolve(__dirname + '/files/' + file[0].toObject().filename), (err) => console.log(err));
-//     await FileModel.findByIdAndDelete({_id: new ObjectId(req.params.id)})
-//     res.sendStatus(200);
-// });
 
 app.delete('/file/:name', async (req, res) => {
     const file = await FileModel.findOne({ filename: req.params.name }).lean();
