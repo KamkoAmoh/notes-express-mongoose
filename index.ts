@@ -5,6 +5,9 @@ import * as fs from 'fs';
 import { ObjectId } from 'mongodb';
 import * as multer from 'multer';
 import * as path from 'path';
+import * as util from 'util';
+
+const unlink = util.promisify(fs.unlink);
 
 const app = express();
 
@@ -115,7 +118,7 @@ app.get('/file/:name', async (req, res) => {
 app.delete('/file/:name', async (req, res) => {
     const file = await FileModel.findOne({ filename: req.params.name }).lean();
     if (!file) return res.sendStatus(404);
-    fs.unlink(path.resolve(__dirname + "/files/" + file.filename), (err) => console.log(err));
+    await unlink(path.resolve(__dirname + "/files/" + file.filename));
     await FileModel.findByIdAndDelete({ _id: new ObjectId(file._id) });
     res.sendStatus(200);
 })
